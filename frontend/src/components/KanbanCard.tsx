@@ -5,7 +5,7 @@ import type { Card } from "@/lib/kanban";
 
 type KanbanCardProps = {
   card: Card;
-  onDelete: (cardId: string) => void;
+  onDelete: (cardId: number) => void;
 };
 
 export const KanbanCard = ({ card, onDelete }: KanbanCardProps) => {

@@ -8,9 +8,9 @@ import { NewCardForm } from "@/components/NewCardForm";
 type KanbanColumnProps = {
   column: Column;
   cards: Card[];
-  onRename: (columnId: string, title: string) => void;
-  onAddCard: (columnId: string, title: string, details: string) => void;
-  onDeleteCard: (columnId: string, cardId: string) => void;
+  onRename: (columnId: number, title: string) => void;
+  onAddCard: (columnId: number, title: string, details: string) => void;
+  onDeleteCard: (columnId: number, cardId: number) => void;
 };
 
 export const KanbanColumn = ({

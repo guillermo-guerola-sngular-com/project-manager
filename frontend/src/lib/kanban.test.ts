@@ -2,24 +2,24 @@ import { moveCard, type Column } from "@/lib/kanban";
 
 describe("moveCard", () => {
   const baseColumns: Column[] = [
-    { id: "col-a", title: "A", cardIds: ["card-1", "card-2"] },
-    { id: "col-b", title: "B", cardIds: ["card-3"] },
+    { id: 1, title: "A", cardIds: [10, 20] },
+    { id: 2, title: "B", cardIds: [30] },
   ];
 
   it("reorders cards in the same column", () => {
-    const result = moveCard(baseColumns, "card-2", "card-1");
-    expect(result[0].cardIds).toEqual(["card-2", "card-1"]);
+    const result = moveCard(baseColumns, 20, 10);
+    expect(result[0].cardIds).toEqual([20, 10]);
   });
 
   it("moves cards to another column", () => {
-    const result = moveCard(baseColumns, "card-2", "card-3");
-    expect(result[0].cardIds).toEqual(["card-1"]);
-    expect(result[1].cardIds).toEqual(["card-2", "card-3"]);
+    const result = moveCard(baseColumns, 20, 30);
+    expect(result[0].cardIds).toEqual([10]);
+    expect(result[1].cardIds).toEqual([20, 30]);
   });
 
   it("drops cards to the end of a column", () => {
-    const result = moveCard(baseColumns, "card-1", "col-b");
-    expect(result[0].cardIds).toEqual(["card-2"]);
-    expect(result[1].cardIds).toEqual(["card-3", "card-1"]);
+    const result = moveCard(baseColumns, 10, 2);
+    expect(result[0].cardIds).toEqual([20]);
+    expect(result[1].cardIds).toEqual([30, 10]);
   });
 });

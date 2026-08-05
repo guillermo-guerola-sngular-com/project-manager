@@ -15,7 +15,10 @@ describe("AppShell", () => {
   });
 
   it("shows the kanban board when authenticated", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ columns: [] }) })
+    );
     render(<AppShell />);
 
     expect(await screen.findByRole("heading", { name: /kanban studio/i })).toBeInTheDocument();

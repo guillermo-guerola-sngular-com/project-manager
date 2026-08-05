@@ -10,7 +10,7 @@ test("rejects wrong credentials", async ({ page }) => {
   await page.getByLabel(/username/i).fill("user");
   await page.getByLabel(/password/i).fill("wrong-password");
   await page.getByRole("button", { name: /log in/i }).click();
-  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByText(/invalid username or password/i)).toBeVisible();
 });
 
 test("logs in, persists across reload, and logs out", async ({ page }) => {
