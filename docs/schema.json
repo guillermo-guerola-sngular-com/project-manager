@@ -1,0 +1,51 @@
+{
+  "tables": [
+    {
+      "name": "users",
+      "description": "One row per user. MVP only ever has a single row (username 'user'), created on first startup. The Part 4 login check is still hardcoded against literal 'user'/'password' and does not read this table yet; password_hash exists so real multi-user auth can be wired in later without a schema change.",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "constraints": ["PRIMARY KEY AUTOINCREMENT"] },
+        { "name": "username", "type": "TEXT", "constraints": ["NOT NULL", "UNIQUE"] },
+        { "name": "password_hash", "type": "TEXT", "constraints": ["NOT NULL"] }
+      ]
+    },
+    {
+      "name": "boards",
+      "description": "One board per user for the MVP, enforced by the UNIQUE constraint on user_id.",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "constraints": ["PRIMARY KEY AUTOINCREMENT"] },
+        { "name": "user_id", "type": "INTEGER", "constraints": ["NOT NULL", "UNIQUE"] }
+      ],
+      "foreign_keys": [
+        { "column": "user_id", "references": "users.id", "on_delete": "CASCADE" }
+      ]
+    },
+    {
+      "name": "columns",
+      "description": "Columns belonging to a board. 'position' is the 0-based display order (columns are fixed in number per the MVP but can be renamed).",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "constraints": ["PRIMARY KEY AUTOINCREMENT"] },
+        { "name": "board_id", "type": "INTEGER", "constraints": ["NOT NULL"] },
+        { "name": "title", "type": "TEXT", "constraints": ["NOT NULL"] },
+        { "name": "position", "type": "INTEGER", "constraints": ["NOT NULL"] }
+      ],
+      "foreign_keys": [
+        { "column": "board_id", "references": "boards.id", "on_delete": "CASCADE" }
+      ]
+    },
+    {
+      "name": "cards",
+      "description": "Cards belonging to a column. 'position' is the 0-based order within that column; moving a card between columns updates both column_id and position.",
+      "columns": [
+        { "name": "id", "type": "INTEGER", "constraints": ["PRIMARY KEY AUTOINCREMENT"] },
+        { "name": "column_id", "type": "INTEGER", "constraints": ["NOT NULL"] },
+        { "name": "title", "type": "TEXT", "constraints": ["NOT NULL"] },
+        { "name": "details", "type": "TEXT", "constraints": ["NOT NULL", "DEFAULT ''"] },
+        { "name": "position", "type": "INTEGER", "constraints": ["NOT NULL"] }
+      ],
+      "foreign_keys": [
+        { "column": "column_id", "references": "columns.id", "on_delete": "CASCADE" }
+      ]
+    }
+  ]
+}

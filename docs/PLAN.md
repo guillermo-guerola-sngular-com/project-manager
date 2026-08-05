@@ -90,14 +90,14 @@ Part 5: Database modeling
 
 Now propose a database schema for the Kanban, saving it as JSON. Document the database approach in docs/ and get user sign off.
 
-- [ ] Design schema: `users`, `boards` (one per user for MVP, schema allows more later), `columns` (ordered, belongs to a board), `cards` (belongs to a column, ordered within it)
-- [ ] Save the schema as `docs/schema.json` (tables, columns, types, keys/relationships)
-- [ ] Write `docs/DATABASE.md`: chosen engine (SQLite), access approach (e.g. SQLAlchemy models vs. raw `sqlite3`), migration strategy (create-tables-if-missing on startup — no formal migration tool needed for MVP), and how the hardcoded user's board is seeded on first run
-- [ ] Present schema + doc to the user for explicit sign-off
+- [x] Design schema: `users`, `boards` (one per user for MVP, schema allows more later), `columns` (ordered, belongs to a board), `cards` (belongs to a column, ordered within it)
+- [x] Save the schema as `docs/schema.json` (tables, columns, types, keys/relationships)
+- [x] Write `docs/DATABASE.md`: chosen engine (SQLite), access approach (e.g. SQLAlchemy models vs. raw `sqlite3`), migration strategy (create-tables-if-missing on startup — no formal migration tool needed for MVP), and how the hardcoded user's board is seeded on first run
+- [x] Present schema + doc to the user for explicit sign-off
 
 **Tests:** none (design/documentation only).
 
-**Success criteria:** user approves `docs/schema.json` and `docs/DATABASE.md` before Part 6 begins.
+**Success criteria:** user approves `docs/schema.json` and `docs/DATABASE.md` before Part 6 begins. Approved.
 
 ---
 
@@ -105,21 +105,22 @@ Part 6: Backend
 
 Now add API routes to allow the backend to read and change the Kanban for a given user; test this thoroughly with backend unit tests. The database should be created if it doesn't exist.
 
-- [ ] Implement models per the approved schema; create the SQLite DB file and tables on startup if missing
-- [ ] Seed the hardcoded user's default board (columns + sample cards) on first run only
-- [ ] `GET /api/board` — full board (columns + cards) for the current user
-- [ ] `PATCH /api/columns/{id}` — rename a column
-- [ ] `POST /api/cards` — create a card in a column
-- [ ] `PATCH /api/cards/{id}` — edit card fields and/or move it to another column/position
-- [ ] `DELETE /api/cards/{id}` — remove a card
-- [ ] All routes above require a valid JWT (reuse the Part 4 guard); unauthenticated requests get 401
-- [ ] Fill in `backend/AGENTS.md` with a real description of the backend code (routes, models, DB access) now that it exists
+- [x] Implement models per the approved schema; create the SQLite DB file and tables on startup if missing
+- [x] Seed the hardcoded user's default board (columns + sample cards) on first run only
+- [x] `GET /api/board` — full board (columns + cards) for the current user
+- [x] `PATCH /api/columns/{id}` — rename a column
+- [x] `POST /api/cards` — create a card in a column
+- [x] `PATCH /api/cards/{id}` — edit card fields and/or move it to another column/position
+- [x] `DELETE /api/cards/{id}` — remove a card
+- [x] All routes above require a valid JWT (reuse the Part 4 guard); unauthenticated requests get 401
+- [x] Fill in `backend/AGENTS.md` with a real description of the backend code (routes, models, DB access) now that it exists
+- [x] (Added, not originally listed) Bind-mount `data/` in `scripts/start.sh`/`start.ps1` — without it, the container's writable layer would discard the SQLite file on every restart, silently failing the persistence success criterion below
 
 **Tests:**
-- Pytest suite against a temp/test SQLite DB (not the real one) covering: each route's happy path, auth rejection without a token, not-found handling for missing column/card ids, and that card moves update ordering correctly
-- Restart-persistence check: write via the API, restart the app process, confirm the data is still there
+- [x] Pytest suite (`backend/tests/test_board.py`, in-memory `StaticPool` test DB, not the real one) covering: each route's happy path, auth rejection without a token, not-found handling for missing column/card ids, and that card moves/reorders update ordering correctly — 20/20 backend tests passing in Docker
+- [x] Restart-persistence check: logged in, created a card via the real `/api/cards` endpoint against the running container, ran `scripts/stop` + `scripts/start`, logged in again (JWT secret regenerates on restart so the old session cookie no longer validates — expected), confirmed the card was still on the board
 
-**Success criteria:** every board mutation is persisted in SQLite and survives a server restart; all backend tests pass; routes are rejected without a valid JWT.
+**Success criteria:** every board mutation is persisted in SQLite and survives a server restart; all backend tests pass; routes are rejected without a valid JWT. Met.
 
 ---
 

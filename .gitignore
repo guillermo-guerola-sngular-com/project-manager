@@ -174,3 +174,8 @@ cython_debug/
 
 .DS_Store
 
+# Local SQLite data (mounted into the container by scripts/start)
+/data/
+backend/data/
+
+
