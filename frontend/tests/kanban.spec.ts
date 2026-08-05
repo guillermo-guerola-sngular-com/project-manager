@@ -36,6 +36,35 @@ test("adds a card to a column and it survives a reload", async ({ page }) => {
   await expect(firstColumnAfterReload.getByText("Playwright card")).toBeVisible();
 });
 
+test("edits a card via the popup, and deletes it only after confirming", async ({ page }) => {
+  const firstColumn = page.locator('[data-testid^="column-"]').first();
+  await firstColumn.getByRole("button", { name: /add a card/i }).click();
+  await firstColumn.getByPlaceholder("Card title").fill("Editable card");
+  await firstColumn.getByRole("button", { name: /add card/i }).click();
+  await expect(firstColumn.getByText("Editable card")).toBeVisible();
+
+  // exact: true, since dnd-kit gives the whole card role="button" too, with an
+  // accessible name that contains this button's — an unanchored/fuzzy match
+  // would resolve to both.
+  await firstColumn.getByRole("button", { name: "Edit Editable card", exact: true }).click();
+  await page.getByPlaceholder("Card title").fill("Edited card");
+  await page.getByRole("button", { name: /save changes/i }).click();
+  await expect(firstColumn.getByText("Edited card")).toBeVisible();
+
+  await page.reload();
+  const firstColumnAfterReload = page.locator('[data-testid^="column-"]').first();
+  await expect(firstColumnAfterReload.getByText("Edited card")).toBeVisible();
+
+  // canceling the confirmation must not delete the card
+  await firstColumnAfterReload.getByRole("button", { name: "Delete Edited card", exact: true }).click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(firstColumnAfterReload.getByText("Edited card")).toBeVisible();
+
+  await firstColumnAfterReload.getByRole("button", { name: "Delete Edited card", exact: true }).click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(firstColumnAfterReload.getByText("Edited card")).not.toBeVisible();
+});
+
 test("moves a card between columns and it survives a reload", async ({ page }) => {
   const firstColumn = page.locator('[data-testid^="column-"]').first();
   const targetColumn = await findColumnByTitle(page, "Review");

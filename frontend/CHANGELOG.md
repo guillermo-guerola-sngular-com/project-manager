@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0]
+
+### Added
+
+- Cards can now be edited: clicking a card's title/details opens the same popup used for creating a card, pre-filled with its current title and details, and saves changes back through the API.
+- A confirmation popup ("Delete card?") is now required before a card is actually deleted, showing the card's title so it's clear what's about to be removed.
+
+### Changed
+
+- The "Remove" text button on each card — which took up enough width to squeeze the title/details column narrow, especially at smaller sizes — is now a small trash icon sized to fit its icon only.
+- Extracted the popup markup shared by card creation, card editing, and the delete confirmation into reusable `Modal`, `CardFormModal`, and `ConfirmModal` components.
+
 ## [1.1.0]
 
 ### Changed

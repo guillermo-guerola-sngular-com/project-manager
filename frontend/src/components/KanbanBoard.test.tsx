@@ -52,7 +52,7 @@ describe("KanbanBoard", () => {
     expect(input).toHaveValue("New Name");
   });
 
-  it("adds and removes a card", async () => {
+  it("adds a card, edits it, then deletes it after confirming", async () => {
     render(<KanbanBoard />);
     await screen.findAllByTestId(/column-/i);
     const column = getFirstColumn();
@@ -70,11 +70,26 @@ describe("KanbanBoard", () => {
 
     expect(await within(column).findByText("New card")).toBeInTheDocument();
 
-    const deleteButton = within(column).getByRole("button", {
-      name: /delete new card/i,
-    });
-    await userEvent.click(deleteButton);
+    // edit: click the card body, change the title, save
+    // exact: true — dnd-kit gives the whole card role="button" too, with an
+    // accessible name that contains this button's, so a fuzzy match would
+    // resolve to both.
+    await userEvent.click(
+      within(column).getByRole("button", { name: "Edit New card", exact: true })
+    );
+    const editTitleInput = await screen.findByDisplayValue("New card");
+    await userEvent.clear(editTitleInput);
+    await userEvent.type(editTitleInput, "Renamed card");
+    await userEvent.click(screen.getByRole("button", { name: /save changes/i }));
 
-    expect(within(column).queryByText("New card")).not.toBeInTheDocument();
+    expect(await within(column).findByText("Renamed card")).toBeInTheDocument();
+
+    // delete: click the trash icon, then confirm in the modal
+    await userEvent.click(
+      within(column).getByRole("button", { name: "Delete Renamed card", exact: true })
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Delete", exact: true }));
+
+    expect(within(column).queryByText("Renamed card")).not.toBeInTheDocument();
   });
 });

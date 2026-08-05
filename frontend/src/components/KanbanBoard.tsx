@@ -96,6 +96,24 @@ export const KanbanBoard = () => {
     }
   };
 
+  const handleEditCard = (cardId: number, title: string, details: string) => {
+    setBoard((prev) => {
+      if (!prev || !prev.cards[cardId]) {
+        return prev;
+      }
+      return {
+        ...prev,
+        cards: {
+          ...prev.cards,
+          [cardId]: { ...prev.cards[cardId], title, details: details || "No details yet." },
+        },
+      };
+    });
+    updateCard(cardId, { title, details: details || "No details yet." }).catch(() =>
+      setError("Couldn't save the card.")
+    );
+  };
+
   const handleDeleteCard = (columnId: number, cardId: number) => {
     setBoard((prev) => {
       if (!prev) {
@@ -188,6 +206,7 @@ export const KanbanBoard = () => {
                 cards={column.cardIds.map((cardId) => board.cards[cardId])}
                 onRename={handleRenameColumn}
                 onAddCard={handleAddCard}
+                onEditCard={handleEditCard}
                 onDeleteCard={handleDeleteCard}
               />
             ))}

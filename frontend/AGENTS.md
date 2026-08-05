@@ -14,9 +14,12 @@ Next.js 16 (App Router) + React 19 + TypeScript, built as a static export (`outp
 - `src/components/LoginForm.tsx` — username/password form, calls `lib/auth.login`, shows an error on failure.
 - `src/components/KanbanBoard.tsx` — client component. Fetches the board from the API on mount (shows "Loading board…" until it resolves). Every interaction (rename, add, delete, drag move) updates local state immediately (optimistic) and fires the matching `lib/api.ts` call in the background; a failed call surfaces a dismissable-by-next-action error banner rather than rolling back — acceptable for an MVP local app where the backend is on the same host.
 - `src/components/KanbanColumn.tsx` — one column: droppable zone, editable title input, sortable list of cards, empty-state placeholder, renders `NewCardForm`.
-- `src/components/KanbanCard.tsx` — one sortable/draggable card with a delete button.
+- `src/components/KanbanCard.tsx` — one sortable/draggable card. The title/details area is a button that opens `CardFormModal` in edit mode; a small trash-icon button opens `ConfirmModal` before actually deleting. Nesting these inside the dnd-kit sortable `<article>` works because `PointerSensor`'s `distance` activation constraint lets plain clicks (no movement) through to inner buttons instead of starting a drag.
 - `src/components/KanbanCardPreview.tsx` — static (non-interactive) card render used inside `DragOverlay` while dragging.
-- `src/components/NewCardForm.tsx` — inline toggle form (title + details) for adding a card to a column.
+- `src/components/NewCardForm.tsx` — "Add a card" trigger button that opens `CardFormModal` in create mode.
+- `src/components/CardFormModal.tsx` — the title/details form, shared by card creation (`NewCardForm`) and editing (`KanbanCard`); which one it is depends only on whether `initialTitle`/`initialDetails` and the heading/submit-label props are set by the caller.
+- `src/components/ConfirmModal.tsx` — generic confirm/cancel dialog; currently used for the delete-card confirmation.
+- `src/components/Modal.tsx` — the shared overlay/dialog shell (`position: fixed` backdrop, close on backdrop click or Escape, `role="dialog"`) that `CardFormModal` and `ConfirmModal` are built on. Add new popups on top of this rather than hand-rolling another overlay.
 
 ## Auth model
 
@@ -35,6 +38,7 @@ Tailwind v4, configured via `@theme inline` in `globals.css` (no `tailwind.confi
 - Unit/component tests: Vitest + Testing Library + jsdom. Files live next to source as `*.test.ts(x)` (see `src/lib/kanban.test.ts`, `src/components/KanbanBoard.test.tsx`, `src/components/LoginForm.test.tsx`, `src/components/AppShell.test.tsx`). Board/auth tests mock `global.fetch` via `vi.stubGlobal`, routing on `(url, options.method)` — see `createFetchMock` in `KanbanBoard.test.tsx` for the pattern. Config: `vitest.config.ts`, setup in `src/test/setup.ts`. Run with `npm run test:unit`.
 - E2E: Playwright, tests in `tests/*.spec.ts` (`tests/kanban.spec.ts`, `tests/auth.spec.ts`; shared login helper in `tests/utils.ts`). Since login and the board are both server-backed, `playwright.config.ts`'s `webServer` builds and runs the real Docker image (`docker build .. && docker run ... -p 3000:8000`) rather than a frontend-only `next dev` server. `kanban.spec.ts` locates columns/cards by their rendered title/testid rather than hardcoded ids, since the database assigns its own ids independent of the old frontend demo's `col-backlog`-style ones. Run with `npm run test:e2e` (requires Docker running; downloads browsers once via `npx playwright install chromium`).
 - `npm run test:all` runs both.
+- Gotcha when querying by role+name for anything inside `KanbanCard`: dnd-kit gives the whole card's `<article>` `role="button"` too (for keyboard drag support), and its computed accessible name concatenates all descendant text/labels — so a fuzzy `getByRole("button", { name: /delete .../i })` will match both that article and the actual delete/edit button. Use `{ name: "...", exact: true }` (or the specific accessible name) to disambiguate, as `KanbanBoard.test.tsx` and `tests/kanban.spec.ts` do.
 
 ## Known gaps
 
