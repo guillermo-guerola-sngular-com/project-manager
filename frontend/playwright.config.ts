@@ -2,6 +2,10 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
+  // All specs share one real backend/database (there's no per-test isolation
+  // at the server level), so tests that mutate the board must not run
+  // concurrently — otherwise one test's writes race another's reads.
+  workers: 1,
   timeout: 60_000,
   expect: {
     timeout: 10_000,
