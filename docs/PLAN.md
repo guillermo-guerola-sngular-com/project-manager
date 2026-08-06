@@ -200,16 +200,21 @@ Part 9: Structured AI responses over the Kanban board
 
 Now extend the backend call so that it always calls the AI with the JSON of the Kanban board, plus the user's question (and conversation history). The AI should respond with Structured Outputs that includes the response to the user and optionaly an update to the Kanban. Test thoroughly.
 
-- [ ] Define the structured output schema: `reply` (string, always present) and `board_update` (optional; a small set of typed operations — e.g. rename column, add card, edit card, move card, delete card — rather than requiring the model to emit the entire board back)
-- [ ] `POST /api/ai/chat` accepting `{ message, history }`; backend assembles a system prompt containing the current board JSON, the conversation history, and the user's message, then calls OpenRouter with the structured output schema enforced
-- [ ] Apply any returned `board_update` operations using the Part 6 CRUD logic (don't duplicate persistence logic)
-- [ ] Response includes both the `reply` text and enough info for the frontend to know the board changed
+- [x] Defined the response schema as pydantic models in `app/ai.py`: `ChatReply` (`reply: str`, `operations: list[Operation] | None`), `Operation` a discriminated union of `rename_column` / `add_card` / `edit_card` / `move_card` / `delete_card` — a small set of typed operations rather than the model emitting the entire board back
+- [x] `POST /api/ai/chat` (`app/chat.py`) accepting `{ message, history }`; assembles a system prompt with the current board JSON and the JSON-only response contract, sends `history` and `message` as chat turns, calls OpenRouter
+- [x] **Not** using OpenAI Structured Outputs / `response_format` — probed manually first (see below) and found it empirically unreliable with this specific free model; using plain JSON-in-prompt instructions plus defensive parsing (`_parse_reply`: strips markdown fences, falls back to a plain-text reply with no operations on any parse/validation failure) instead
+- [x] Applies any returned `operations` using the Part 6 CRUD logic directly — `app/chat.py` calls `app/board.py`'s route functions (`rename_column`, `create_card`, `update_card`, `delete_card`) rather than duplicating persistence logic; an operation with an unknown column/card id is caught and skipped, not fatal to the request
+- [x] Response is `{reply, board_changed}` — `board_changed` is `true` iff at least one operation actually applied, which is what Part 10's frontend needs to decide whether to refetch
+
+**Probe findings (why no `response_format`):** manually tested `openai/gpt-oss-20b:free` via OpenRouter with the `openai` SDK's `response_format={"type": "json_object"}` (and the stricter `.parse()` / `json_schema` helper). Combined with board+schema instructions in the system message, the model's `message.content` came back `None` five times in a row — the model's reasoning-channel output ("We need to output JSON...") was present but the final-channel content was empty, a provider/model-side quirk with this specific reasoning model rather than anything fixable in our request. Moving the same instructions so the schema/board is in the system message and *not* setting `response_format` at all was reliable across repeated manual tests (rename + plain-question, 3/3 and 3/3). Documented in `app/ai.py`'s module comments and `backend/AGENTS.md`.
 
 **Tests:**
-- Unit tests with a mocked OpenRouter response to verify: parsing of `reply`-only responses, parsing and correct DB application of each `board_update` operation type, and that malformed/unexpected model output doesn't corrupt the board
-- One real-call test (network, like Part 8) using a simple instruction such as "rename the first column to Todo" and asserting the column is actually renamed in the DB afterward
+- [x] `backend/tests/test_ai_parsing.py` — unit tests `_parse_reply` directly, no network: plain JSON, markdown-fenced JSON, an embedded operation, garbage text, an unknown `operations[].type`, and `None` content — all fall back correctly
+- [x] `backend/tests/test_chat.py` — `POST /api/ai/chat` with `ask_structured` monkeypatched to return a fixed `ChatReply`: reply-only leaves the board untouched, each of the 5 operation types is correctly applied to the DB (verified via `GET /api/board` afterward), and an operation with a nonexistent id is skipped without a 500 and without touching the board. Auth-rejection test included. 9/9 passing.
+- [x] `backend/tests/test_chat_real.py` — real network call (no mocking), asserting "rename the first column, currently called '<title>', to 'Todo'" actually renames it in the DB, and a plain question ("what's the weather like today?") leaves the board untouched. 2/2 passing.
+- [x] Full backend suite: 37/37 passing in Docker (`docker run --rm --env-file .env pm-app uv run pytest`)
 
-**Success criteria:** chatting with an instruction that implies a board change actually mutates the SQLite board and returns a sensible confirmation message; a plain question with no board change leaves the board untouched.
+**Success criteria:** chatting with an instruction that implies a board change actually mutates the SQLite board and returns a sensible confirmation message; a plain question with no board change leaves the board untouched. Met — verified via the real-call test above. Backend bumped to `1.2.0`.
 
 ---
 

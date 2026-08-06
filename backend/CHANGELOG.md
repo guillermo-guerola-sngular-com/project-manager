@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0]
+
+### Added
+
+- `app/ai.py`: `ask_structured(board, history, message)` — sends the current board JSON plus conversation history to OpenRouter and parses the reply into `reply` text and an optional list of typed `operations` (`rename_column`, `add_card`, `edit_card`, `move_card`, `delete_card`). Parsing is defensive: markdown-fenced JSON is unwrapped, and any invalid/unexpected model output falls back to a plain-text reply with no operations rather than erroring.
+- `app/chat.py`: `POST /api/ai/chat` (auth-protected) — applies any returned operations via the existing `app/board.py` route functions (no duplicated persistence logic), skipping any operation that references a nonexistent column/card. Returns `{reply, board_changed}`.
+- No `response_format` structured-output mode is used — empirically unreliable with `openai/gpt-oss-20b:free` on OpenRouter when combined with the board/schema system prompt (returns empty content). Plain JSON-in-prompt plus defensive parsing proved reliable instead.
+
 ## [1.1.0]
 
 ### Added
