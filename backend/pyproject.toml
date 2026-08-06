@@ -1,12 +1,13 @@
 [project]
 name = "backend"
-version = "1.0.0"
+version = "1.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "pyjwt",
     "sqlalchemy",
+    "openai",
 ]
 
 [dependency-groups]

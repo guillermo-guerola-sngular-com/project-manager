@@ -186,13 +186,13 @@ Part 8: AI connectivity
 
 Now allow the backend to make an AI call via OpenRouter. Test connectivity with a simple "2+2" test and ensure the AI call is working.
 
-- [ ] Backend OpenRouter client using `OPENROUTER_API_KEY` from `.env` and model `openai/gpt-oss-20b:free`
-- [ ] `POST /api/ai/ping` (or equivalent internal call exercised by a test) that sends a simple prompt like "What is 2+2? Answer with only the number." and returns the model's reply
+- [x] Backend OpenRouter client using `OPENROUTER_API_KEY` from `.env` and model `openai/gpt-oss-20b:free` — `app/ai.py`, using the `openai` SDK pointed at OpenRouter's `base_url` (chosen over raw `httpx` so Part 9's structured-output `response_format` has first-class support)
+- [x] No HTTP endpoint yet (decided with the user: `/api/ai/ping` would just be throwaway surface Part 9's `/api/ai/chat` immediately replaces) — `ask(prompt)` is exercised directly by a test instead
 
 **Tests:**
-- Backend test that calls the real OpenRouter API (this one intentionally hits the network — no mocking, since the goal is to prove connectivity) and asserts the reply contains "4"
+- [x] `backend/tests/test_ai.py` calls the real OpenRouter API (no mocking) with "What is 2+2? Answer with only the number." and asserts the reply contains "4" — passing in Docker (`docker run --rm --env-file .env pm-app uv run pytest`), alongside the existing 20 tests (21/21)
 
-**Success criteria:** a real round trip to OpenRouter succeeds and returns a correct answer to the arithmetic check.
+**Success criteria:** a real round trip to OpenRouter succeeds and returns a correct answer to the arithmetic check. Met. Backend bumped to `1.1.0`.
 
 ---
 

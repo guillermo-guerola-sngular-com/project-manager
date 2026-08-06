@@ -9,6 +9,7 @@ FastAPI + SQLAlchemy 2.0 (typed ORM style), served by `uv`. Serves the built fro
 - `app/db.py` — SQLite engine/session setup. `DATABASE_PATH` is `backend/data/app.db`; `get_db()` is the per-request session dependency.
 - `app/models.py` — SQLAlchemy models matching `docs/schema.json` exactly: `User` (1) -> `Board` (1, unique `user_id`) -> `Column` (many) -> `Card` (many). Cascade deletes configured but not yet exercised by any route.
 - `app/seed.py` — `seed_default_user_and_board`: on a fresh database, creates the `user` row and seeds one board with the same 5 columns / 8 cards as the frontend's original `initialData` demo content. Only runs once — checks for existing rows first, so restarts never duplicate data.
+- `app/ai.py` — OpenRouter connectivity. `ask(prompt)` sends a single-turn chat completion via the `openai` SDK pointed at `base_url="https://openrouter.ai/api/v1"`, model `openai/gpt-oss-20b:free`, `api_key` from `OPENROUTER_API_KEY` (read lazily per call, not at import time, so the app still starts without it set). No route yet — exercised directly by a test; Part 9 will build `POST /api/ai/chat` on top of it.
 - `app/board.py` — board CRUD, all routes behind `get_current_user`:
   - `GET /api/board` — full board (columns with nested cards, ordered by `position`)
   - `PATCH /api/columns/{id}` — rename
@@ -23,4 +24,4 @@ SQLite file at `backend/data/app.db` inside the container. **`scripts/start.sh`/
 
 ## Testing
 
-`backend/tests/`, pytest (run via `uv run pytest`, only inside Docker — no local Python on this machine). `conftest.py` provides `client` (fresh in-memory SQLite via `StaticPool`, seeded, `get_db` overridden) and `auth_client` (same, pre-logged-in) fixtures — tests never touch the real `backend/data/app.db`. `test_main.py`, `test_auth.py`, `test_board.py` cover static serving, auth, and board CRUD (happy paths, 404s, auth rejection, reorder/move correctness) respectively.
+`backend/tests/`, pytest (run via `uv run pytest`, only inside Docker — no local Python on this machine). `conftest.py` provides `client` (fresh in-memory SQLite via `StaticPool`, seeded, `get_db` overridden) and `auth_client` (same, pre-logged-in) fixtures — tests never touch the real `backend/data/app.db`. `test_main.py`, `test_auth.py`, `test_board.py` cover static serving, auth, and board CRUD (happy paths, 404s, auth rejection, reorder/move correctness) respectively. `test_ai.py` intentionally hits the real OpenRouter API (no mocking) to prove connectivity — run the container with `--env-file .env` so `OPENROUTER_API_KEY` is present, e.g. `docker run --rm --env-file .env pm-app uv run pytest`.
