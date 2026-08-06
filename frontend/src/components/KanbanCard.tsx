@@ -54,7 +54,7 @@ export const KanbanCard = ({ card, onEdit, onDelete }: KanbanCardProps) => {
         {...listeners}
         data-testid={`card-${card.id}`}
       >
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => setIsEditing(true)}
@@ -64,9 +64,6 @@ export const KanbanCard = ({ card, onEdit, onDelete }: KanbanCardProps) => {
             <h4 className="font-display text-base font-semibold text-[var(--navy-dark)]">
               {card.title}
             </h4>
-            <p className="mt-2 text-sm leading-6 text-[var(--gray-text)]">
-              {card.details}
-            </p>
           </button>
           <button
             type="button"
@@ -77,6 +74,7 @@ export const KanbanCard = ({ card, onEdit, onDelete }: KanbanCardProps) => {
             <TrashIcon />
           </button>
         </div>
+        <p className="mt-2 w-full text-sm leading-6 text-[var(--gray-text)]">{card.details}</p>
       </article>
 
       {isEditing && (

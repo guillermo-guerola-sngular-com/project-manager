@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1]
+
+### Fixed
+
+- On each card, the title and the trash icon shared one flex row with the description nested inside the same clickable area, so the row's height (and the narrow column reserved for the icon) was set by the description's full height, capping how wide the description could render. Split them: title + trash icon now share a row sized to just the title, and the description sits in its own block below spanning the full card width.
+
 ## [1.2.0]
 
 ### Added
