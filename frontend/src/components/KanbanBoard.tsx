@@ -20,7 +20,14 @@ import { KanbanCardPreview } from "@/components/KanbanCardPreview";
 import { moveCard, type BoardData } from "@/lib/kanban";
 import { createCard, deleteCard, fetchBoard, renameColumn, updateCard } from "@/lib/api";
 
-export const KanbanBoard = () => {
+type KanbanBoardProps = {
+  // Bumped by AppShell whenever the AI chat reports it changed the board, so
+  // this effect re-runs and pulls the latest state instead of the frontend
+  // trying to replay the AI's operations itself.
+  refreshSignal?: number;
+};
+
+export const KanbanBoard = ({ refreshSignal = 0 }: KanbanBoardProps = {}) => {
   const [board, setBoard] = useState<BoardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
@@ -30,7 +37,7 @@ export const KanbanBoard = () => {
     fetchBoard()
       .then(setBoard)
       .catch(() => setError("Couldn't load the board."));
-  }, []);
+  }, [refreshSignal]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

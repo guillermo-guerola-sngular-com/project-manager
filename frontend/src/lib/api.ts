@@ -74,3 +74,21 @@ export const deleteCard = async (cardId: number): Promise<void> => {
     throw new Error("Failed to delete the card.");
   }
 };
+
+export type ChatMessage = { role: "user" | "assistant"; content: string };
+
+export const sendChatMessage = async (
+  message: string,
+  history: ChatMessage[]
+): Promise<{ reply: string; boardChanged: boolean }> => {
+  const response = await fetch("/api/ai/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, history }),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to send the message.");
+  }
+  const data: { reply: string; board_changed: boolean } = await response.json();
+  return { reply: data.reply, boardChanged: data.board_changed };
+};

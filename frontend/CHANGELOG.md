@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0]
+
+### Added
+
+- AI chat sidebar (`ChatSidebar`), visible alongside the board once logged in, hidden on the login screen. Sends `{ message, history }` to `POST /api/ai/chat`, renders the assistant's `reply`, and — when the response reports `board_changed: true` — bumps a `refreshSignal` prop threaded from `AppShell` through to `KanbanBoard`, which refetches `GET /api/board` so the board updates live with no manual reload.
+
 ## [1.2.2]
 
 ### Fixed

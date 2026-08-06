@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ChatSidebar } from "@/components/ChatSidebar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { LoginForm } from "@/components/LoginForm";
 import { fetchSession, logout, type AuthStatus } from "@/lib/auth";
 
 export const AppShell = () => {
   const [status, setStatus] = useState<AuthStatus>("loading");
+  const [refreshSignal, setRefreshSignal] = useState(0);
 
   useEffect(() => {
     fetchSession().then((ok) => setStatus(ok ? "authenticated" : "unauthenticated"));
@@ -26,17 +28,20 @@ export const AppShell = () => {
   }
 
   return (
-    <div>
-      <div className="flex justify-end px-6 pt-4">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="rounded-full border border-[var(--stroke)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
-        >
-          Log out
-        </button>
+    <div className="flex">
+      <div className="min-w-0 flex-1">
+        <div className="flex justify-end px-6 pt-4">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-full border border-[var(--stroke)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
+          >
+            Log out
+          </button>
+        </div>
+        <KanbanBoard refreshSignal={refreshSignal} />
       </div>
-      <KanbanBoard />
+      <ChatSidebar onBoardChanged={() => setRefreshSignal((n) => n + 1)} />
     </div>
   );
 };

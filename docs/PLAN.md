@@ -222,13 +222,16 @@ Part 10: AI chat sidebar UI
 
 Now add a beautiful sidebar widget to the UI supporting full AI chat, and allowing the LLM (as it determines) to update the Kanban based on its Structured Outputs. If the AI updates the Kanban, then the UI should refresh automatically.
 
-- [ ] Sidebar component: scrollable message history, text input, send button, styled per the project color scheme
-- [ ] Sends `{ message, history }` to `POST /api/ai/chat`, appends the AI's `reply` to the message history
-- [ ] When the response indicates a `board_update` was applied, refetch `GET /api/board` (or apply the update client-side) so the Kanban view refreshes without a manual page reload
-- [ ] Sidebar is available alongside the board once the user is logged in; hidden on the login screen
+- [x] `ChatSidebar` component (`frontend/src/components/ChatSidebar.tsx`): scrollable message history (user/assistant bubbles), text input, send button, styled with the project's CSS color vars — a fixed-width panel on the right of the screen, `AppShell` now a flex row of `[board, sidebar]`
+- [x] Sends `{ message, history }` to `POST /api/ai/chat` (`lib/api.ts`'s `sendChatMessage`), appends the AI's `reply` to the message history
+- [x] When the response reports `board_changed: true`, refetches `GET /api/board` — chose refetch over replaying the operations client-side, so the operation-application logic lives in exactly one place (`backend/app/chat.py`), not duplicated in the frontend. Wired via a `refreshSignal` counter: `ChatSidebar`'s `onBoardChanged` bumps it in `AppShell`, which passes it down to `KanbanBoard`, whose `fetchBoard()` effect depends on it
+- [x] Sidebar renders only in `AppShell`'s authenticated branch — hidden on the login screen, visible alongside the board once logged in
 
 **Tests:**
-- Frontend unit tests: sending a message renders the reply, board-refresh is triggered only when a `board_update` was present
-- E2E: log in, send a chat instruction that changes the board (e.g. "add a card called X to the Backlog column"), confirm the card appears on the board without a manual reload
+- [x] `frontend/src/components/ChatSidebar.test.tsx` — sending a message renders the reply; `onBoardChanged` fires only when `board_changed: true`; prior turns are sent as `history` on the next message; a failed request shows an alert. 4/4 passing
+- [x] `frontend/src/components/AppShell.test.tsx` — extended to assert the sidebar heading is absent while unauthenticated and present once authenticated
+- [x] `frontend/tests/chat.spec.ts` (Playwright, real network — no mocking, same as the backend's real-call tests): sending "Add a card called 'Playwright AI card' to the Backlog column." makes the card appear inside that column without a reload; a plain question leaves the card count unchanged. 2/2 passing against the real Docker stack
+- [x] Manually verified in-browser against the real container: logged in, asked the assistant to add a card, watched it appear in Backlog live (network tab showed `board_changed: true` followed by a `GET /api/board` refetch), then deleted the test card
+- [x] Full suites: frontend unit 15/15 green (`npm run test:unit`); e2e 9/10 (`npm run test:all`) — the one failure is the pre-existing, previously-documented same-column drag-reorder gap (see `frontend/AGENTS.md`'s Known Gaps), reproduced in isolation with the same error to confirm it's unchanged by this part and not a new regression
 
-**Success criteria:** a user can converse with the AI in the sidebar and watch the Kanban board update live when the AI decides to change it, with no manual refresh needed.
+**Success criteria:** a user can converse with the AI in the sidebar and watch the Kanban board update live when the AI decides to change it, with no manual refresh needed. Met — confirmed both via the real e2e test and manual browsing. Frontend bumped to `1.3.0`.
