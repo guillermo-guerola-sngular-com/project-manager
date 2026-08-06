@@ -143,6 +143,45 @@ Now have the frontend actually use the backend API, so that the app is a proper 
 
 ---
 
+Additional work (requested by the user after Part 7, before starting Part 8)
+
+These weren't in the original 10 parts — they came from direct user feedback on the running app. Documented here so the plan stays a complete record of what's been built and why, even though they don't map onto Part 8/9/10's numbering.
+
+### Card editing popup, trash icon, and delete confirmation
+
+Requested: a way to edit existing cards (reusing the same popup used for creation), replace the wide "Remove" text button with a small trash icon (it was squeezing the title/details column narrow), and require confirmation before a card is actually deleted.
+
+- [x] Extracted `Modal` (shared overlay/dialog shell), `CardFormModal` (the title/details form — the same component now used for both create and edit, distinguished only by props), and `ConfirmModal` (generic confirm/cancel) as reusable components
+- [x] Clicking a card's title opens `CardFormModal` in edit mode, pre-filled, saving via the existing `PATCH /api/cards/{id}`
+- [x] Replaced the "Remove" text button with a small trash-icon button (inline SVG, no new dependency)
+- [x] Deleting now opens `ConfirmModal` ("Delete card?", showing the card's title) before calling `DELETE /api/cards/{id}`
+- [x] Follow-up fix: the trash icon and the description were still in the same flex row, so the row's height (and the icon's reserved column) was set by the description's full height, capping its width. Split into two blocks: a header row (title + trash icon, sized to the title only) and the description as a separate full-width block below.
+- [x] No backend changes — editing and deleting already used the existing `PATCH`/`DELETE` endpoints from Part 6
+
+**Tests:** unit tests for edit/confirm-delete in `KanbanBoard.test.tsx`; e2e coverage in `kanban.spec.ts` (edit via popup, cancel-then-confirm delete). Found and fixed a locator bug along the way: dnd-kit gives each card's outer `<article>` `role="button"` too (for keyboard drag), and its computed accessible name contains the inner Edit/Delete buttons' names — a fuzzy `getByRole` name match resolves to both, so these use `exact: true`.
+
+**Success criteria:** met — verified manually against the real container (edit, cancel delete, confirm delete) and via 11/11 unit + 7/7 e2e tests. Frontend bumped to `1.1.0` (popup) → `1.2.0` (edit/trash/confirm) → `1.2.1` (layout fix). No backend version change.
+
+### Drag-and-drop reliability fix
+
+Reported: the column-drop highlight didn't always appear, dropping a card onto a column sometimes didn't move it, and reordering cards within a column rarely worked.
+
+Root causes, all in `KanbanBoard.tsx`'s `DndContext` setup:
+- `closestCorners` collision detection could resolve to a card in a neighboring column instead of the column being hovered, so the column never registered as the drop target (missing highlight, drops that silently did nothing).
+- A plain pointer-based check over a non-empty column resolved to the *column* rather than the specific card under the pointer, so `moveCard` always appended to the end instead of inserting at that position — the real cause of same-column reordering being unreliable.
+- The refined per-card check could match the dragged card's own (pointer-following) rect as its closest collision, making a real drop look like "no move" (`active.id === over.id`).
+- An intermediate fix mutated `board` on every `dragover` event, which reshuffled the DOM mid-gesture and shifted the very rects collision detection measures against, causing moves to thrash/undo themselves — reverted in favor of the design below.
+
+- [x] Custom `collisionDetectionStrategy`: `pointerWithin` (falling back to `rectIntersection`), refined by narrowing a column-level collision down to the closest actual card via `closestCenter`, explicitly excluding the dragged card itself from that refinement
+- [x] Column highlight decoupled from board data: a dedicated `overColumnId` state, updated on every `dragover`, drives the highlight; `board` itself is only mutated once, in `onDragEnd`
+- [x] Added an e2e test for same-column reordering (`kanban.spec.ts`)
+
+**Tests:** all 11 unit tests pass. e2e: cross-column move now passes reliably (was previously intermittent). Same-column reordering **could not be confirmed** via this session's automated browser tooling — Playwright's synthetic drag didn't reliably trigger the drop for this specific gesture even after several rounds of fixes and mouse-choreography adjustments, and the in-session interactive browser tool requires the user to have its pane open to perform a real drag, which wasn't the case this session. The underlying logic (`moveCard`) is unit-tested and is the same code path already proven for cross-column moves, but this specific scenario is flagged as unverified in `frontend/AGENTS.md`'s Known Gaps.
+
+**Success criteria:** highlight and cross-column drop are fixed and verified. Same-column reorder is implemented and believed fixed (same root-cause fixes apply) but **pending manual confirmation by the user** — asked directly, awaiting their test. Frontend bumped to `1.2.2`. No backend version change.
+
+---
+
 Part 8: AI connectivity
 
 Now allow the backend to make an AI call via OpenRouter. Test connectivity with a simple "2+2" test and ensure the AI call is working.
