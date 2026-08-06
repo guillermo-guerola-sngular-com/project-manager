@@ -7,8 +7,12 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
+  closestCenter,
+  pointerWithin,
+  rectIntersection,
+  type CollisionDetection,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { KanbanColumn } from "@/components/KanbanColumn";
@@ -20,6 +24,7 @@ export const KanbanBoard = () => {
   const [board, setBoard] = useState<BoardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
+  const [overColumnId, setOverColumnId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchBoard()
@@ -35,21 +40,81 @@ export const KanbanBoard = () => {
 
   const cardsById = useMemo(() => board?.cards ?? {}, [board]);
 
+  // Plain closest-corner/center detection is unreliable once a droppable
+  // column contains nested sortable cards: it can resolve the collision to a
+  // card in a neighboring column instead of the column itself, so the column
+  // never registers as the drop target. Preferring whatever droppable the
+  // pointer is actually inside fixes that — but the column's own droppable
+  // rect covers its cards too and is registered before them, so a plain
+  // pointerWithin() over a non-empty column resolves to the *column*, not
+  // the specific card under the pointer. That breaks "insert at this card's
+  // position" (moveCard treats an over-a-column result as "append to the
+  // end" instead), which is exactly why same-column reordering was
+  // unreliable. Refine: if the first collision is a column with cards,
+  // narrow to whichever of its cards is actually closest to the pointer.
+  const collisionDetectionStrategy: CollisionDetection = (args) => {
+    const pointerCollisions = pointerWithin(args);
+    const collisions = pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);
+    const firstCollision = collisions[0];
+    const column = board?.columns.find((c) => c.id === firstCollision?.id);
+
+    if (column && column.cardIds.length > 0) {
+      const cardCollisions = closestCenter({
+        ...args,
+        // Exclude the card actually being dragged: its own droppable rect
+        // tracks the pointer via transform, so its "distance" to the pointer
+        // is ~0 and it would otherwise always win as its own closest match —
+        // over ends up equal to active, and handleDragEnd's active-id-equals
+        // -over-id guard then treats that as "no move," which is exactly why
+        // same-column reordering silently did nothing.
+        droppableContainers: args.droppableContainers.filter(
+          (container) =>
+            container.id !== args.active.id && column.cardIds.includes(container.id as number)
+        ),
+      });
+      if (cardCollisions.length > 0) {
+        return cardCollisions;
+      }
+    }
+
+    return collisions;
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveCardId(event.active.id as number);
+    const id = event.active.id as number;
+    setActiveCardId(id);
+    setOverColumnId(board?.columns.find((column) => column.cardIds.includes(id))?.id ?? null);
+  };
+
+  // Purely cosmetic: tracks which column to highlight as the drop target.
+  // Deliberately does NOT touch `board` — mutating the actual card/column
+  // data on every pointer-move event reshuffles the DOM mid-gesture, which
+  // shifts the very rects dnd-kit measures collisions against and makes the
+  // drag thrash/flip-flop, undoing itself before you even let go. The real
+  // move is resolved once, cleanly, in handleDragEnd.
+  const handleDragOver = (event: DragOverEvent) => {
+    const { over } = event;
+    if (!over || !board) {
+      setOverColumnId(null);
+      return;
+    }
+    const overId = over.id as number;
+    const column = board.columns.find(
+      (candidate) => candidate.id === overId || candidate.cardIds.includes(overId)
+    );
+    setOverColumnId(column?.id ?? null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveCardId(null);
-
-    if (!over || active.id === over.id || !board) {
+    setOverColumnId(null);
+    if (!board || !over || active.id === over.id) {
       return;
     }
 
     const activeId = active.id as number;
-    const overId = over.id as number;
-    const nextColumns = moveCard(board.columns, activeId, overId);
+    const nextColumns = moveCard(board.columns, activeId, over.id as number);
     setBoard({ ...board, columns: nextColumns });
 
     const targetColumn = nextColumns.find((column) => column.cardIds.includes(activeId));
@@ -194,8 +259,9 @@ export const KanbanBoard = () => {
 
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={collisionDetectionStrategy}
           onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <section className="grid gap-6 lg:grid-cols-5">
@@ -204,6 +270,7 @@ export const KanbanBoard = () => {
                 key={column.id}
                 column={column}
                 cards={column.cardIds.map((cardId) => board.cards[cardId])}
+                isDropTarget={overColumnId === column.id}
                 onRename={handleRenameColumn}
                 onAddCard={handleAddCard}
                 onEditCard={handleEditCard}

@@ -8,6 +8,7 @@ import { NewCardForm } from "@/components/NewCardForm";
 type KanbanColumnProps = {
   column: Column;
   cards: Card[];
+  isDropTarget: boolean;
   onRename: (columnId: number, title: string) => void;
   onAddCard: (columnId: number, title: string, details: string) => void;
   onEditCard: (cardId: number, title: string, details: string) => void;
@@ -17,19 +18,24 @@ type KanbanColumnProps = {
 export const KanbanColumn = ({
   column,
   cards,
+  isDropTarget,
   onRename,
   onAddCard,
   onEditCard,
   onDeleteCard,
 }: KanbanColumnProps) => {
-  const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  // Registers this column as a droppable target (needed so dropping on empty
+  // column space resolves to the column itself), but the highlight below is
+  // driven by isDropTarget instead of this hook's own isOver — see
+  // KanbanBoard's onDragOver for why.
+  const { setNodeRef } = useDroppable({ id: column.id });
 
   return (
     <section
       ref={setNodeRef}
       className={clsx(
         "flex min-h-[520px] flex-col rounded-3xl border border-[var(--stroke)] bg-[var(--surface-strong)] p-4 shadow-[var(--shadow)] transition",
-        isOver && "ring-2 ring-[var(--accent-yellow)]"
+        isDropTarget && "ring-2 ring-[var(--accent-yellow)]"
       )}
       data-testid={`column-${column.id}`}
     >

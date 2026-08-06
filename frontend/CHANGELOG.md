@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.1]
+## [1.2.2]
+
+### Fixed
+
+- Drag-and-drop was unreliable: the column-drop highlight sometimes didn't appear, dropping a card onto a column sometimes didn't move it, and reordering cards within a column rarely worked. Root causes: `closestCorners` collision detection could resolve to a card in a neighboring column instead of the column being hovered; a plain pointer-based check over a non-empty column resolved to the *column* rather than the specific card under the pointer, so moveCard always "appended to the end" instead of inserting at that position; and the refined per-card check could match the dragged card's own (pointer-following) rect as its closest collision, making drop-on-itself look like "no move." Column highlighting now tracks a dedicated piece of state kept in sync on every drag-over instead of relying on dnd-kit's per-column `isOver`, which had the same neighboring-card ambiguity. Verified via e2e: cross-column moves and the collision-detection logic are covered by an updated automated test; same-column reordering could not be exercised through this environment's automated browser tooling this round and needs a manual check.
 
 ### Fixed
 
