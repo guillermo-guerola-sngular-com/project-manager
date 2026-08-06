@@ -58,10 +58,10 @@ export const KanbanCard = ({ card, onEdit, onDelete }: KanbanCardProps) => {
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="flex-1 text-left"
+            className="min-w-0 flex-1 text-left"
             aria-label={`Edit ${card.title}`}
           >
-            <h4 className="font-display text-base font-semibold text-[var(--navy-dark)]">
+            <h4 className="break-words font-display text-base font-semibold text-[var(--navy-dark)]">
               {card.title}
             </h4>
           </button>

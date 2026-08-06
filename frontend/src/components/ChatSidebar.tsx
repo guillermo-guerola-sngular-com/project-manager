@@ -7,7 +7,38 @@ type ChatSidebarProps = {
   onBoardChanged: () => void;
 };
 
+const ChatBubbleIcon = () => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-5 w-5"
+    aria-hidden="true"
+  >
+    <path d="M3 5.5A2.5 2.5 0 0 1 5.5 3h9A2.5 2.5 0 0 1 17 5.5v6a2.5 2.5 0 0 1-2.5 2.5H9l-3.5 3v-3H5.5A2.5 2.5 0 0 1 3 11.5v-6Z" />
+  </svg>
+);
+
+const ChevronIcon = () => (
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4"
+    aria-hidden="true"
+  >
+    <path d="M12.5 5 7.5 10l5 5" />
+  </svg>
+);
+
 export const ChatSidebar = ({ onBoardChanged }: ChatSidebarProps) => {
+  const [collapsed, setCollapsed] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -39,15 +70,40 @@ export const ChatSidebar = ({ onBoardChanged }: ChatSidebarProps) => {
     }
   };
 
+  if (collapsed) {
+    return (
+      <aside className="flex h-screen w-14 flex-shrink-0 flex-col items-center border-l border-[var(--stroke)] bg-white/80 pt-4 backdrop-blur">
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          aria-label="Open chat assistant"
+          className="rounded-full p-2.5 text-[var(--secondary-purple)] transition hover:bg-[var(--surface)]"
+        >
+          <ChatBubbleIcon />
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="flex h-screen w-[360px] flex-shrink-0 flex-col border-l border-[var(--stroke)] bg-white/80 backdrop-blur">
-      <div className="border-b border-[var(--stroke)] px-6 py-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--gray-text)]">
-          Assistant
-        </p>
-        <h2 className="mt-1 font-display text-xl font-semibold text-[var(--navy-dark)]">
-          Ask the board
-        </h2>
+      <div className="flex items-center justify-between gap-2 border-b border-[var(--stroke)] px-6 py-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--gray-text)]">
+            Assistant
+          </p>
+          <h2 className="mt-1 font-display text-xl font-semibold text-[var(--navy-dark)]">
+            Ask the board
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => setCollapsed(true)}
+          aria-label="Collapse chat assistant"
+          className="shrink-0 rounded-full p-1.5 text-[var(--gray-text)] transition hover:bg-[var(--surface)] hover:text-[var(--navy-dark)]"
+        >
+          <ChevronIcon />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-4">

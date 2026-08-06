@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1]
+
+### Fixed
+
+- The board header was oversized (full title/tagline block, a "Focus" panel, and a row of column-name pills), squeezing the columns underneath. Replaced with a single compact bar (title + the logout button, merged in from `AppShell`) so most of the vertical space goes to the columns.
+- On narrow columns, the card's title and trash-icon button shared a flex row where the title button had no `min-width: 0`, so a long title could force the row wider than the card and push the trash icon out past the card's edge. The title button now shrinks (`min-w-0`) and wraps (`break-words`) instead.
+
+### Added
+
+- `ChatSidebar` is now collapsible: a chevron button in its header collapses it to a slim 56px tab with just a reopen button, so it can be tucked away when not in use. Collapsed/expanded state is local to the component (not persisted).
+
 ## [1.3.0]
 
 ### Added

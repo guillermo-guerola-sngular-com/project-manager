@@ -72,4 +72,18 @@ describe("ChatSidebar", () => {
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
   });
+
+  it("collapses and can be reopened", async () => {
+    vi.stubGlobal("fetch", createFetchMock(false));
+    render(<ChatSidebar onBoardChanged={vi.fn()} />);
+
+    expect(screen.getByRole("heading", { name: /ask the board/i })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /collapse chat assistant/i }));
+    expect(screen.queryByRole("heading", { name: /ask the board/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Chat message")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /open chat assistant/i }));
+    expect(screen.getByRole("heading", { name: /ask the board/i })).toBeInTheDocument();
+  });
 });

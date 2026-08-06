@@ -30,16 +30,7 @@ export const AppShell = () => {
   return (
     <div className="flex">
       <div className="min-w-0 flex-1">
-        <div className="flex justify-end px-6 pt-4">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-full border border-[var(--stroke)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
-          >
-            Log out
-          </button>
-        </div>
-        <KanbanBoard refreshSignal={refreshSignal} />
+        <KanbanBoard refreshSignal={refreshSignal} onLogout={handleLogout} />
       </div>
       <ChatSidebar onBoardChanged={() => setRefreshSignal((n) => n + 1)} />
     </div>
