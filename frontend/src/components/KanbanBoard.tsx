@@ -7,16 +7,13 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCenter,
-  pointerWithin,
-  rectIntersection,
-  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
+import { createCollisionDetectionStrategy } from "@/lib/dndCollision";
 import { moveCard, type BoardData } from "@/lib/kanban";
 import { createCard, deleteCard, fetchBoard, renameColumn, updateCard } from "@/lib/api";
 
@@ -35,6 +32,7 @@ export const KanbanBoard = ({ refreshSignal = 0, onLogout }: KanbanBoardProps = 
   const [overColumnId, setOverColumnId] = useState<number | null>(null);
 
   useEffect(() => {
+    setError(null);
     fetchBoard()
       .then(setBoard)
       .catch(() => setError("Couldn't load the board."));
@@ -48,45 +46,12 @@ export const KanbanBoard = ({ refreshSignal = 0, onLogout }: KanbanBoardProps = 
 
   const cardsById = useMemo(() => board?.cards ?? {}, [board]);
 
-  // Plain closest-corner/center detection is unreliable once a droppable
-  // column contains nested sortable cards: it can resolve the collision to a
-  // card in a neighboring column instead of the column itself, so the column
-  // never registers as the drop target. Preferring whatever droppable the
-  // pointer is actually inside fixes that — but the column's own droppable
-  // rect covers its cards too and is registered before them, so a plain
-  // pointerWithin() over a non-empty column resolves to the *column*, not
-  // the specific card under the pointer. That breaks "insert at this card's
-  // position" (moveCard treats an over-a-column result as "append to the
-  // end" instead), which is exactly why same-column reordering was
-  // unreliable. Refine: if the first collision is a column with cards,
-  // narrow to whichever of its cards is actually closest to the pointer.
-  const collisionDetectionStrategy: CollisionDetection = (args) => {
-    const pointerCollisions = pointerWithin(args);
-    const collisions = pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);
-    const firstCollision = collisions[0];
-    const column = board?.columns.find((c) => c.id === firstCollision?.id);
-
-    if (column && column.cardIds.length > 0) {
-      const cardCollisions = closestCenter({
-        ...args,
-        // Exclude the card actually being dragged: its own droppable rect
-        // tracks the pointer via transform, so its "distance" to the pointer
-        // is ~0 and it would otherwise always win as its own closest match —
-        // over ends up equal to active, and handleDragEnd's active-id-equals
-        // -over-id guard then treats that as "no move," which is exactly why
-        // same-column reordering silently did nothing.
-        droppableContainers: args.droppableContainers.filter(
-          (container) =>
-            container.id !== args.active.id && column.cardIds.includes(container.id as number)
-        ),
-      });
-      if (cardCollisions.length > 0) {
-        return cardCollisions;
-      }
-    }
-
-    return collisions;
-  };
+  // The refinement logic itself (why plain pointerWithin/rectIntersection
+  // resolve to a column instead of the specific card under the pointer,
+  // and why the dragged card must be excluded from its own column's
+  // refinement) is documented in lib/dndCollision.ts, where it's a pure,
+  // independently unit-tested function.
+  const collisionDetectionStrategy = createCollisionDetectionStrategy(board?.columns ?? []);
 
   const handleDragStart = (event: DragStartEvent) => {
     const id = event.active.id as number;
@@ -117,6 +82,7 @@ export const KanbanBoard = ({ refreshSignal = 0, onLogout }: KanbanBoardProps = 
     const { active, over } = event;
     setActiveCardId(null);
     setOverColumnId(null);
+    setError(null);
     if (!board || !over || active.id === over.id) {
       return;
     }
@@ -135,6 +101,7 @@ export const KanbanBoard = ({ refreshSignal = 0, onLogout }: KanbanBoardProps = 
   };
 
   const handleRenameColumn = (columnId: number, title: string) => {
+    setError(null);
     setBoard((prev) =>
       prev
         ? {
@@ -149,6 +116,7 @@ export const KanbanBoard = ({ refreshSignal = 0, onLogout }: KanbanBoardProps = 
   };
 
   const handleAddCard = async (columnId: number, title: string, details: string) => {
+    setError(null);
     try {
       const created = await createCard(columnId, title, details || "No details yet.");
       setBoard((prev) =>
@@ -170,6 +138,7 @@ export const KanbanBoard = ({ refreshSignal = 0, onLogout }: KanbanBoardProps = 
   };
 
   const handleEditCard = (cardId: number, title: string, details: string) => {
+    setError(null);
     setBoard((prev) => {
       if (!prev || !prev.cards[cardId]) {
         return prev;
@@ -188,6 +157,7 @@ export const KanbanBoard = ({ refreshSignal = 0, onLogout }: KanbanBoardProps = 
   };
 
   const handleDeleteCard = (columnId: number, cardId: number) => {
+    setError(null);
     setBoard((prev) => {
       if (!prev) {
         return prev;
